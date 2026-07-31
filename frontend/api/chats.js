@@ -12,7 +12,9 @@ export default async function handler(req, res) {
     // Kommo: /api/v4/talks = conversaciones del inbox unificado (WhatsApp, IG, FB, TikTok)
     const data = await getTalks({ page: +page, limit: +limit, ...(q && { query: q }) })
     const talks = data?._embedded?.talks ?? []
-    res.json({ chats: talks.map(normalizeTalk), page: +page, has_more: talks.length === +limit })
+    // Ordenar por más reciente primero
+    const sorted = talks.slice().sort((a, b) => (b.updated_at ?? 0) - (a.updated_at ?? 0))
+    res.json({ chats: sorted.map(normalizeTalk), page: +page, has_more: talks.length === +limit })
   } catch (err) {
     console.error('[Chats/Talks]', err.response?.data || err.message)
     res.status(500).json({ error: 'Error al obtener conversaciones' })
@@ -20,12 +22,11 @@ export default async function handler(req, res) {
 }
 
 function normalizeTalk(talk) {
-  // El contacto viene en _embedded.contacts (solo con ID via talks API)
-  // El nombre viene del campo name del contacto si está disponible
   const contact = talk._embedded?.contacts?.[0] ?? {}
   return {
-    id:              String(talk.chat_id ?? talk.talk_id),  // UUID del chat para mensajes
+    id:              String(talk.entity_id),  // lead_id — usado para obtener notas/mensajes
     talk_id:         talk.talk_id,
+    chat_id:         talk.chat_id,            // UUID — para enviar mensajes
     contact: {
       id:     contact.id,
       name:   contact.name || `Contacto ${contact.id ?? ''}`,
@@ -36,7 +37,6 @@ function normalizeTalk(talk) {
     last_message_at: talk.last_message?.created_at ?? talk.updated_at,
     unread_count:    talk.is_read === false ? 1 : 0,
     entity_id:       talk.entity_id,
-    chat_id:         talk.chat_id,
     updated_at:      talk.updated_at,
   }
 }

@@ -19,8 +19,9 @@ async function req(method, path, params = {}, body = null) {
 export const getTalks = (p = {}) =>
   req('get', '/talks', { with: 'contacts', ...p })
 
-export const getTalkMessages = (chatId, p = {}) =>
-  req('get', `/chats/${chatId}/messages`, p)
+// Notes = mensajes guardados como notas en el lead
+export const getLeadNotes = (leadId, p = {}) =>
+  req('get', `/leads/${leadId}/notes`, { 'order[id]': 'asc', ...p })
 
 export const sendTalkMessage = (chatId, text) =>
   req('post', `/chats/${chatId}/messages`, {}, { body: { type: 'text', text } })
