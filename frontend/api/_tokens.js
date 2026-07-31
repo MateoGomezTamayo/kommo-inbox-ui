@@ -65,7 +65,7 @@ export async function saveTokens(data) {
 // ─── Interno ───────────────────────────────────────────────────────────────────
 
 async function _exchangeRefreshToken(refreshToken) {
-  const { KOMMO_CLIENT_ID, KOMMO_CLIENT_SECRET, KOMMO_SUBDOMAIN, KOMMO_REDIRECT_URI } = process.env
+  const { KOMMO_CLIENT_ID, KOMMO_CLIENT_SECRET, KOMMO_SUBDOMAIN } = process.env
   const { data } = await axios.post(
     `https://${KOMMO_SUBDOMAIN}.kommo.com/oauth2/access_token`,
     {
@@ -73,7 +73,6 @@ async function _exchangeRefreshToken(refreshToken) {
       client_secret: KOMMO_CLIENT_SECRET,
       grant_type:    'refresh_token',
       refresh_token: refreshToken,
-      redirect_uri:  KOMMO_REDIRECT_URI,
     }
   )
   // Cachear en Redis si está disponible para no intercambiar en cada request
