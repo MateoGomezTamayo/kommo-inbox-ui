@@ -12,12 +12,15 @@ export default async function handler(req, res) {
 
   if (req.method === 'GET') {
     try {
+      // chatId es el UUID del chat (talk.chat_id)
+      // Los mensajes se obtienen en /api/v4/chats/{chat_id}/messages
       const data = await getTalkMessages(chatId, { page: +page, limit: +limit })
       const messages = data?._embedded?.messages ?? []
       return res.json({ messages: messages.map(normalizeMessage), page: +page, has_more: messages.length === +limit })
     } catch (err) {
       console.error('[Messages GET]', err.response?.data || err.message)
-      return res.status(500).json({ error: 'Error al obtener mensajes' })
+      // Devolver array vacío en vez de error para no bloquear la UI
+      return res.json({ messages: [], page: +page, has_more: false })
     }
   }
 

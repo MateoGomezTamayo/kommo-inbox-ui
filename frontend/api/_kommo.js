@@ -17,13 +17,13 @@ async function req(method, path, params = {}, body = null) {
 
 // Talks = conversaciones del inbox de Kommo (WhatsApp, IG, FB, TikTok)
 export const getTalks = (p = {}) =>
-  req('get', '/talks', { with: 'contact', ...p })
+  req('get', '/talks', { with: 'contacts', ...p })
 
-export const getTalkMessages = (talkId, p = {}) =>
-  req('get', `/talks/${talkId}/messages`, p)
+export const getTalkMessages = (chatId, p = {}) =>
+  req('get', `/chats/${chatId}/messages`, p)
 
-export const sendTalkMessage = (talkId, text) =>
-  req('post', `/talks/${talkId}/messages`, {}, { body: { type: 'text', text } })
+export const sendTalkMessage = (chatId, text) =>
+  req('post', `/chats/${chatId}/messages`, {}, { body: { type: 'text', text } })
 
 // Leads — fallback para data adicional
 export const getLeads        = (p = {}) => req('get', '/leads', p)

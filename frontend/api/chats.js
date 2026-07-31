@@ -20,28 +20,33 @@ export default async function handler(req, res) {
 }
 
 function normalizeTalk(talk) {
-  const contact = talk._embedded?.contact ?? talk.contact ?? {}
+  // El contacto viene en _embedded.contacts (solo con ID via talks API)
+  // El nombre viene del campo name del contacto si está disponible
+  const contact = talk._embedded?.contacts?.[0] ?? {}
   return {
-    id:              String(talk.id),
+    id:              String(talk.chat_id ?? talk.talk_id),  // UUID del chat para mensajes
+    talk_id:         talk.talk_id,
     contact: {
       id:     contact.id,
-      name:   contact.name || 'Sin nombre',
+      name:   contact.name || `Contacto ${contact.id ?? ''}`,
       avatar: contact.avatar_url ?? null,
     },
     channel:         detectChannel(talk),
     last_message:    talk.last_message?.body?.text ?? talk.last_message?.text ?? '',
     last_message_at: talk.last_message?.created_at ?? talk.updated_at,
-    unread_count:    talk.unread_count ?? 0,
-    entity_id:       talk.entity_id,   // lead_id
+    unread_count:    talk.is_read === false ? 1 : 0,
+    entity_id:       talk.entity_id,
+    chat_id:         talk.chat_id,
     updated_at:      talk.updated_at,
   }
 }
 
 function detectChannel(talk) {
-  const src = (talk.origin?.source ?? talk.source?.type ?? '').toLowerCase()
-  if (src.includes('whatsapp'))                       return 'whatsapp'
-  if (src.includes('instagram'))                      return 'instagram'
-  if (src.includes('facebook') || src.includes('fb')) return 'facebook'
-  if (src.includes('tiktok'))                         return 'tiktok'
+  const src = (talk.origin ?? '').toLowerCase()
+  // Kommo source values: 'waba' = WhatsApp Business API
+  if (src === 'waba' || src.includes('whatsapp'))          return 'whatsapp'
+  if (src === 'instagram' || src.includes('instagram'))    return 'instagram'
+  if (src === 'facebook' || src.includes('fb'))            return 'facebook'
+  if (src === 'tiktok')                                    return 'tiktok'
   return 'unknown'
 }
