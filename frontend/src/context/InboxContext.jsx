@@ -27,8 +27,9 @@ function reducer(state, action) {
     case 'SET_CONVERSATIONS':
       return {
         ...state,
+        // Solo reemplazar si hay datos — nunca borrar conversaciones existentes por un poll vacío
         conversations: action.payload.page === 1
-          ? action.payload.chats
+          ? (action.payload.chats.length > 0 ? action.payload.chats : state.conversations)
           : [...state.conversations, ...action.payload.chats],
         page:    action.payload.page,
         hasMore: action.payload.has_more,
