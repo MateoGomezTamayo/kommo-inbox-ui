@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+# Tokens file — contiene credenciales sensibles, NUNCA commitear
+.tokens.json
+*.log
+.DS_Store
+Thumbs.db
+.vercel/
