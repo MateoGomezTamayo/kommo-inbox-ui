@@ -32,18 +32,10 @@ export default async function handler(req, res) {
     const base = `https://${process.env.KOMMO_SUBDOMAIN}.kommo.com`
     const h = { headers: { Authorization: `Bearer ${token}` } }
 
-    // Probar varios endpoints para ver cuál responde
-    const tests = {}
-    for (const path of ['/api/v4/leads?limit=2&with=contacts', '/api/v4/chats?limit=2', '/api/v4/talks?limit=2']) {
-      try {
-        const r = await axios.get(`${base}${path}`, h)
-        const embedded = r.data?._embedded ?? {}
-        tests[path] = { status: 200, keys: Object.keys(embedded), count: Object.values(embedded)[0]?.length ?? 0 }
-      } catch (e) {
-        tests[e.config?.url?.replace(base, '') ?? path] = { status: e.response?.status, error: e.response?.data?.title ?? e.message }
-      }
-    }
-    result.kommo_test = tests
+    // Mostrar la estructura raw del primer talk para mapear los campos correctamente
+    const r = await axios.get(`${base}/api/v4/talks?limit=1&with=contact`, h)
+    const talk = r.data?._embedded?.talks?.[0] ?? null
+    result.kommo_test = { ok: true, total_talks: r.data?._total_items, raw_talk: talk }
   } catch (err) {
     result.error = {
       message: err.message,
