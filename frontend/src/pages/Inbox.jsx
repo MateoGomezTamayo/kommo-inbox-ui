@@ -17,7 +17,7 @@ export default function Inbox() {
             Conecta tu cuenta Kommo para ver y responder conversaciones de WhatsApp, Instagram, Facebook y TikTok.
           </p>
           <a
-            href="/auth/start"
+            href="/api/auth-start"
             className="inline-block bg-green-500 text-white px-8 py-3 rounded-full font-medium hover:bg-green-600 transition-colors shadow-md"
           >
             Conectar con Kommo

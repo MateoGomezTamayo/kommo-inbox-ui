@@ -1,4 +1,4 @@
-const BASE = import.meta.env.VITE_BACKEND_URL || ''
+const BASE = ''
 
 async function request(path, options = {}) {
   const res = await fetch(`${BASE}${path}`, {
@@ -14,7 +14,7 @@ async function request(path, options = {}) {
 
 export const api = {
   getAuthStatus: () =>
-    request('/auth/status'),
+    request('/api/auth'),
 
   getChats: (params = {}) => {
     const qs = new URLSearchParams(params).toString()
@@ -22,12 +22,12 @@ export const api = {
   },
 
   getMessages: (chatId, params = {}) => {
-    const qs = new URLSearchParams(params).toString()
-    return request(`/api/chats/${chatId}/messages${qs ? `?${qs}` : ''}`)
+    const qs = new URLSearchParams({ chatId, ...params }).toString()
+    return request(`/api/messages?${qs}`)
   },
 
   sendMessage: (chatId, text) =>
-    request(`/api/chats/${chatId}/messages`, {
+    request(`/api/messages?chatId=${chatId}`, {
       method: 'POST',
       body: JSON.stringify({ text }),
     }),

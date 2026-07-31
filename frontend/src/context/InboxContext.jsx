@@ -1,6 +1,6 @@
 import { createContext, useContext, useReducer, useCallback, useEffect } from 'react'
 import { api } from '../lib/api.js'
-import { useSocket } from '../hooks/useSocket.js'
+import { usePolling } from '../hooks/useSocket.js'
 
 const InboxContext = createContext(null)
 
@@ -149,14 +149,28 @@ export function InboxProvider({ children }) {
     dispatch({ type: 'SET_SEARCH', payload: q })
   }, [])
 
-  // Mensajes en tiempo real desde el backend via socket
-  const handleNewMessages = useCallback((messages) => {
-    for (const msg of messages) {
-      dispatch({ type: 'APPEND_MESSAGE', payload: { chatId: msg.chat_id, message: msg } })
-    }
-  }, [])
+  // Polling: mensajes del chat activo cada 5s
+  const pollMessages = useCallback(async () => {
+    if (!state.activeChatId) return
+    try {
+      const data = await api.getMessages(state.activeChatId)
+      const existingIds = new Set((state.messages[state.activeChatId] ?? []).map(m => m.id))
+      for (const msg of data.messages) {
+        if (!existingIds.has(msg.id)) {
+          dispatch({ type: 'APPEND_MESSAGE', payload: { chatId: state.activeChatId, message: msg } })
+        }
+      }
+    } catch { /* silenciar errores de polling */ }
+  }, [state.activeChatId, state.messages])
 
-  useSocket(handleNewMessages)
+  usePolling(pollMessages, 5000, !!state.activeChatId && state.connected)
+
+  // Polling: refrescar lista de conversaciones cada 30s
+  const pollChats = useCallback(() => {
+    if (state.connected) loadConversations(1)
+  }, [state.connected, loadConversations])
+
+  usePolling(pollChats, 30000, state.connected)
 
   return (
     <InboxContext.Provider value={{
