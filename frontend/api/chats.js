@@ -1,6 +1,6 @@
 import { setCORS } from './_cors.js'
 import { hasTokens } from './_tokens.js'
-import { getLeads } from './_kommo.js'
+import { getTalks } from './_kommo.js'
 
 export default async function handler(req, res) {
   setCORS(res)
@@ -9,43 +9,39 @@ export default async function handler(req, res) {
 
   try {
     const { page = 1, limit = 50, q } = req.query
-    // Kommo: los "chats" de WhatsApp/Instagram/Facebook/TikTok llegan como leads
-    // con conversaciones asociadas. Usar /api/v4/leads con contactos embebidos.
-    const data = await getLeads({ page: +page, limit: +limit, query: q })
-    const leads = data?._embedded?.leads ?? []
-    res.json({ chats: leads.map(normalizeLead), page: +page, has_more: leads.length === +limit })
+    // Kommo: /api/v4/talks = conversaciones del inbox unificado (WhatsApp, IG, FB, TikTok)
+    const data = await getTalks({ page: +page, limit: +limit, ...(q && { query: q }) })
+    const talks = data?._embedded?.talks ?? []
+    res.json({ chats: talks.map(normalizeTalk), page: +page, has_more: talks.length === +limit })
   } catch (err) {
-    console.error('[Chats]', err.response?.data || err.message)
+    console.error('[Chats/Talks]', err.response?.data || err.message)
     res.status(500).json({ error: 'Error al obtener conversaciones' })
   }
 }
 
-function normalizeLead(lead) {
-  const contact = lead._embedded?.contacts?.[0] ?? {}
+function normalizeTalk(talk) {
+  const contact = talk._embedded?.contact ?? talk.contact ?? {}
   return {
-    id:              String(lead.id),
+    id:              String(talk.id),
     contact: {
       id:     contact.id,
-      name:   contact.name || lead.name || 'Sin nombre',
+      name:   contact.name || 'Sin nombre',
       avatar: contact.avatar_url ?? null,
     },
-    channel:         detectChannel(lead),
-    last_message:    lead.name || '',
-    last_message_at: lead.updated_at ?? lead.created_at,
-    unread_count:    0,
-    updated_at:      lead.updated_at,
+    channel:         detectChannel(talk),
+    last_message:    talk.last_message?.body?.text ?? talk.last_message?.text ?? '',
+    last_message_at: talk.last_message?.created_at ?? talk.updated_at,
+    unread_count:    talk.unread_count ?? 0,
+    entity_id:       talk.entity_id,   // lead_id
+    updated_at:      talk.updated_at,
   }
 }
 
-function detectChannel(lead) {
-  // Detectar canal por etiquetas, pipeline o nombre del lead
-  const tags = (lead._embedded?.tags ?? []).map(t => t.name?.toLowerCase() ?? '')
-  const name  = (lead.name ?? '').toLowerCase()
-  const all   = [...tags, name].join(' ')
-
-  if (all.includes('whatsapp') || all.includes('wpp'))   return 'whatsapp'
-  if (all.includes('instagram') || all.includes('ig'))   return 'instagram'
-  if (all.includes('facebook') || all.includes('fb'))    return 'facebook'
-  if (all.includes('tiktok'))                            return 'tiktok'
+function detectChannel(talk) {
+  const src = (talk.origin?.source ?? talk.source?.type ?? '').toLowerCase()
+  if (src.includes('whatsapp'))                       return 'whatsapp'
+  if (src.includes('instagram'))                      return 'instagram'
+  if (src.includes('facebook') || src.includes('fb')) return 'facebook'
+  if (src.includes('tiktok'))                         return 'tiktok'
   return 'unknown'
 }

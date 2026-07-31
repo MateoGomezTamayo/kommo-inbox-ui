@@ -1,6 +1,6 @@
 import { setCORS } from './_cors.js'
 import { hasTokens } from './_tokens.js'
-import { getChatMessages, sendChatMessage } from './_kommo.js'
+import { getTalkMessages, sendTalkMessage } from './_kommo.js'
 
 export default async function handler(req, res) {
   setCORS(res)
@@ -10,10 +10,9 @@ export default async function handler(req, res) {
   const { chatId, page = 1, limit = 50 } = req.query
   if (!chatId) return res.status(400).json({ error: 'chatId requerido' })
 
-  // GET — obtener historial de mensajes
   if (req.method === 'GET') {
     try {
-      const data = await getChatMessages(chatId, { page: +page, limit: +limit })
+      const data = await getTalkMessages(chatId, { page: +page, limit: +limit })
       const messages = data?._embedded?.messages ?? []
       return res.json({ messages: messages.map(normalizeMessage), page: +page, has_more: messages.length === +limit })
     } catch (err) {
@@ -22,12 +21,11 @@ export default async function handler(req, res) {
     }
   }
 
-  // POST — enviar mensaje de texto
   if (req.method === 'POST') {
     const { text } = req.body ?? {}
     if (!text?.trim()) return res.status(400).json({ error: 'text requerido' })
     try {
-      await sendChatMessage(chatId, text.trim())
+      await sendTalkMessage(chatId, text.trim())
       return res.json({ ok: true })
     } catch (err) {
       console.error('[Messages POST]', err.response?.data || err.message)
@@ -40,11 +38,11 @@ export default async function handler(req, res) {
 
 function normalizeMessage(msg) {
   return {
-    id:         msg.id,
-    chat_id:    msg.chat_id,
+    id:         String(msg.id),
+    chat_id:    String(msg.talk_id ?? msg.chat_id),
     text:       msg.body?.text ?? msg.text ?? '',
     type:       msg.type ?? 'text',
-    direction:  msg.direction ?? (msg.author?.id ? 'out' : 'in'),
+    direction:  msg.direction ?? (msg.author?.type === 'user' ? 'out' : 'in'),
     created_at: msg.created_at,
   }
 }
