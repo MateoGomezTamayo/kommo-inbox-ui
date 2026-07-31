@@ -24,11 +24,20 @@ export async function hasTokens() {
 }
 
 export async function getAccessToken() {
-  // ── Opción 1: token directo de larga duración (sin expiración corta) ──────
+  // ── Opción 1: token directo de larga duración (usado como Bearer directamente) ──
   if (process.env.KOMMO_ACCESS_TOKEN) return process.env.KOMMO_ACCESS_TOKEN
 
-  // ── Opción 2: intercambiar KOMMO_LONG_TOKEN (refresh token) por access token ──
+  // ── Opción 2: KOMMO_LONG_TOKEN — intentar primero como access token directo,
+  //    si falla intentar exchange como refresh token ─────────────────────────
   if (process.env.KOMMO_LONG_TOKEN) {
+    // Verificar si ya tenemos un access_token cacheado en Redis
+    if (redis) {
+      const cached = await redis.get(REDIS_KEY).catch(() => null)
+      if (cached?.access_token && Date.now() < cached.expires_at) {
+        return cached.access_token
+      }
+    }
+    // El token de larga duración de Kommo es un refresh token — intercambiarlo
     return _exchangeRefreshToken(process.env.KOMMO_LONG_TOKEN)
   }
 
