@@ -32,22 +32,32 @@ export default async function handler(req, res) {
     const base = `https://${process.env.KOMMO_SUBDOMAIN}.kommo.com`
     const h = { headers: { Authorization: `Bearer ${token}` } }
 
-    // Obtener el primer talk y probar notas del lead
     const r = await axios.get(`${base}/api/v4/talks?limit=1&with=contacts`, h)
     const talk = r.data?._embedded?.talks?.[0] ?? null
+    const talkId   = talk?.talk_id
     const entityId = talk?.entity_id
+    const chatId   = talk?.chat_id
 
-    let notes_test = null
-    if (entityId) {
-      try {
-        const nr = await axios.get(`${base}/api/v4/leads/${entityId}/notes?limit=5`, h)
-        const notes = nr.data?._embedded?.notes ?? []
-        notes_test = { status: 200, total: nr.data?._total_items, count: notes.length, types: notes.map(n => n.note_type), first_note: notes[0] ?? null }
-      } catch (e) {
-        notes_test = { status: e.response?.status, error: e.response?.data }
+    // Probar todos los posibles endpoints de mensajes
+    const tests = {}
+    const endpoints = [
+      `/api/v4/talks/${talkId}/messages?limit=3`,
+      `/api/v4/leads/${entityId}/notes?limit=3&filter[note_type][]=102&filter[note_type][]=103`,
+      `/api/v4/contacts/${talk?._embedded?.contacts?.[0]?.id}/notes?limit=3`,
+      `/api/v4/leads/${entityId}/notes?limit=3`,
+    ]
+    for (const ep of endpoints) {
+      if (!ep.includes('undefined')) {
+        try {
+          const tr = await axios.get(`${base}${ep}`, h)
+          const key = Object.keys(tr.data?._embedded ?? {})[0] ?? 'data'
+          tests[ep] = { status: 200, count: tr.data?._embedded?.[key]?.length ?? 0, total: tr.data?._total_items }
+        } catch (e) {
+          tests[ep] = { status: e.response?.status }
+        }
       }
     }
-    result.kommo_test = { entity_id: entityId, notes_test }
+    result.kommo_test = { talk_id: talkId, entity_id: entityId, chat_id: chatId, tests }
   } catch (err) {
     result.error = {
       message: err.message,
