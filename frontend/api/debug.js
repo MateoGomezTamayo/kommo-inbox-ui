@@ -27,15 +27,15 @@ export default async function handler(req, res) {
   result.has_tokens = await hasTokens()
 
   try {
-    const token = await getAccessToken()
-    result.token = token ? `${token.substring(0, 12)}...` : null
+    const token = process.env.KOMMO_LONG_TOKEN || process.env.KOMMO_ACCESS_TOKEN
+    result.token = token ? `${token.substring(0, 20)}...` : null
 
-    // Probar llamada real a Kommo API
+    // Probar con el endpoint de chats (el que usa la app)
     const { data } = await axios.get(
-      `https://${process.env.KOMMO_SUBDOMAIN}.kommo.com/api/v4/account`,
+      `https://${process.env.KOMMO_SUBDOMAIN}.kommo.com/api/v4/chats?limit=1`,
       { headers: { Authorization: `Bearer ${token}` } }
     )
-    result.kommo_test = { ok: true, account_id: data.id, name: data.name, subdomain: data.subdomain }
+    result.kommo_test = { ok: true, chats_count: data?._embedded?.chats?.length ?? 0, raw_keys: Object.keys(data || {}) }
   } catch (err) {
     result.error = {
       message: err.message,
