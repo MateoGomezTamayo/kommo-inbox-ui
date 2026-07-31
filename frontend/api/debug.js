@@ -32,10 +32,21 @@ export default async function handler(req, res) {
     const base = `https://${process.env.KOMMO_SUBDOMAIN}.kommo.com`
     const h = { headers: { Authorization: `Bearer ${token}` } }
 
-    // Mostrar la estructura raw del primer talk para mapear los campos correctamente
-    const r = await axios.get(`${base}/api/v4/talks?limit=1&with=contact`, h)
+    // Obtener el primer talk y probar sus mensajes
+    const r = await axios.get(`${base}/api/v4/talks?limit=1&with=contacts`, h)
     const talk = r.data?._embedded?.talks?.[0] ?? null
-    result.kommo_test = { ok: true, total_talks: r.data?._total_items, raw_talk: talk }
+    const chatId = talk?.chat_id
+
+    let messages_test = null
+    if (chatId) {
+      try {
+        const mr = await axios.get(`${base}/api/v4/chats/${chatId}/messages?limit=3`, h)
+        messages_test = { status: 200, count: mr.data?._embedded?.messages?.length ?? 0, keys: Object.keys(mr.data?._embedded ?? {}), first_msg: mr.data?._embedded?.messages?.[0] ?? null }
+      } catch (e) {
+        messages_test = { status: e.response?.status, error: e.response?.data }
+      }
+    }
+    result.kommo_test = { chat_id: chatId, messages_test }
   } catch (err) {
     result.error = {
       message: err.message,
