@@ -18,6 +18,10 @@ export default async function handler(req, res) {
     KOMMO_REDIRECT_URI:  !!process.env.KOMMO_REDIRECT_URI,
     KOMMO_LONG_TOKEN:    !!process.env.KOMMO_LONG_TOKEN,
     KOMMO_ACCESS_TOKEN:  !!process.env.KOMMO_ACCESS_TOKEN,
+    // Primeros 20 chars del LONG_TOKEN para verificar que no esté truncado
+    KOMMO_LONG_TOKEN_preview: process.env.KOMMO_LONG_TOKEN
+      ? `${process.env.KOMMO_LONG_TOKEN.substring(0, 20)}... (len=${process.env.KOMMO_LONG_TOKEN.length})`
+      : null,
   }
 
   result.has_tokens = await hasTokens()
