@@ -1,8 +1,16 @@
 const BASE = ''
 
+function getToken() {
+  return localStorage.getItem('app_token') || ''
+}
+
 async function request(path, options = {}) {
   const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...options.headers },
+    headers: {
+      'Content-Type': 'application/json',
+      'X-App-Token': getToken(),
+      ...options.headers,
+    },
     ...options,
   })
   if (!res.ok) {

@@ -1,10 +1,12 @@
 import { setCORS } from './_cors.js'
 import { hasTokens } from './_tokens.js'
+import { validateAppToken } from './_auth.js'
 import { getTalkMessages, sendTalkMessage } from './_kommo.js'
 
 export default async function handler(req, res) {
   setCORS(res)
   if (req.method === 'OPTIONS') return res.status(200).end()
+  if (!validateAppToken(req)) return res.status(401).json({ error: 'unauthorized' })
   if (!await hasTokens()) return res.status(401).json({ error: 'not_authorized' })
 
   // chatId = talk_id (integer) del talk

@@ -3,7 +3,7 @@ import Sidebar from '../components/Sidebar.jsx'
 import ChatPanel from '../components/ChatPanel.jsx'
 import EmptyState from '../components/EmptyState.jsx'
 
-export default function Inbox() {
+export default function Inbox({ onLogout }) {
   const { connected, activeChatId } = useInbox()
 
   // Sin tokens — mostrar pantalla de conexión
@@ -31,7 +31,7 @@ export default function Inbox() {
     <div className="flex h-screen overflow-hidden bg-white">
       {/* Sidebar siempre visible en desktop, oculto en mobile cuando hay chat activo */}
       <div className={`${activeChatId ? 'hidden md:flex' : 'flex'} flex-col`}>
-        <Sidebar />
+        <Sidebar onLogout={onLogout} />
       </div>
 
       {/* Panel de chat */}

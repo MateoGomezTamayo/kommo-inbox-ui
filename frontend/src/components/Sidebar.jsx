@@ -1,8 +1,9 @@
+import { LogOut } from 'lucide-react'
 import { useInbox } from '../context/InboxContext.jsx'
 import ConversationItem from './ConversationItem.jsx'
 import SearchBar from './SearchBar.jsx'
 
-export default function Sidebar() {
+export default function Sidebar({ onLogout }) {
   const {
     conversations,
     loadingConversations,
@@ -18,7 +19,18 @@ export default function Sidebar() {
     <div className="w-80 md:w-96 flex flex-col border-r border-gray-200 bg-white h-screen">
       {/* Header */}
       <div className="px-4 pt-4 pb-3 border-b border-gray-100 shrink-0">
-        <h1 className="text-xl font-semibold text-gray-800 mb-3">Mensajes</h1>
+        <div className="flex items-center justify-between mb-3">
+          <h1 className="text-xl font-semibold text-gray-800">Mensajes</h1>
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              className="text-gray-400 hover:text-gray-600 transition-colors p-1"
+              title="Cerrar sesión"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          )}
+        </div>
         <SearchBar onChange={setSearchQuery} />
       </div>
 
