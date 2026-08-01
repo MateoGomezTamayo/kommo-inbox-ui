@@ -1,12 +1,16 @@
-// Endpoint de diagnóstico — eliminar en producción o proteger con un token secreto
-// Visitar: https://tu-app.vercel.app/api/debug
+// Endpoint de diagnóstico — protegido con DEBUG_TOKEN en Vercel env vars.
+// Si DEBUG_TOKEN no está configurado, devuelve 404 (oculto en producción).
 import { setCORS } from './_cors.js'
 import { getAccessToken, hasTokens } from './_tokens.js'
 import axios from 'axios'
 
 export default async function handler(req, res) {
-  setCORS(res)
+  setCORS(res, req)
   if (req.method === 'OPTIONS') return res.status(200).end()
+
+  const debugToken = process.env.DEBUG_TOKEN
+  if (!debugToken) return res.status(404).json({ error: 'Not found' })
+  if (req.query.token !== debugToken) return res.status(403).json({ error: 'Forbidden' })
 
   const result = { env: {}, token: null, kommo_test: null, error: null }
 
