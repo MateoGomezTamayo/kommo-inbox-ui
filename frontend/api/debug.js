@@ -34,30 +34,18 @@ export default async function handler(req, res) {
 
     const r = await axios.get(`${base}/api/v4/talks?limit=1&with=contacts`, h)
     const talk = r.data?._embedded?.talks?.[0] ?? null
-    const talkId   = talk?.talk_id
-    const entityId = talk?.entity_id
-    const chatId   = talk?.chat_id
+    const talkId = talk?.talk_id
 
-    // Probar todos los posibles endpoints de mensajes
-    const tests = {}
-    const endpoints = [
-      `/api/v4/talks/${talkId}/messages?limit=3`,
-      `/api/v4/leads/${entityId}/notes?limit=3&filter[note_type][]=102&filter[note_type][]=103`,
-      `/api/v4/contacts/${talk?._embedded?.contacts?.[0]?.id}/notes?limit=3`,
-      `/api/v4/leads/${entityId}/notes?limit=3`,
-    ]
-    for (const ep of endpoints) {
-      if (!ep.includes('undefined')) {
-        try {
-          const tr = await axios.get(`${base}${ep}`, h)
-          const key = Object.keys(tr.data?._embedded ?? {})[0] ?? 'data'
-          tests[ep] = { status: 200, count: tr.data?._embedded?.[key]?.length ?? 0, total: tr.data?._total_items }
-        } catch (e) {
-          tests[ep] = { status: e.response?.status }
-        }
+    let msg_test = null
+    if (talkId) {
+      try {
+        const mr = await axios.get(`${base}/api/v4/talks/${talkId}/messages?limit=3`, h)
+        msg_test = { status: 200, count: mr.data?._embedded?.messages?.length ?? 0, first: mr.data?._embedded?.messages?.[0] ?? null }
+      } catch (e) {
+        msg_test = { status: e.response?.status, error: e.response?.data }
       }
     }
-    result.kommo_test = { talk_id: talkId, entity_id: entityId, chat_id: chatId, tests }
+    result.kommo_test = { talk_id: talkId, msg_test }
   } catch (err) {
     result.error = {
       message: err.message,
