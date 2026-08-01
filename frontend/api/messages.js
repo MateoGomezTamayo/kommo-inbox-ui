@@ -13,16 +13,38 @@ export default async function handler(req, res) {
 
   if (req.method === 'GET') {
     try {
-      // GET /api/v4/talks/{talk_id}/messages (requiere scope: External chat history)
       const data = await getTalkMessages(chatId, { page: +page, limit: +limit })
       const messages = data?._embedded?.messages ?? []
       return res.json({ messages: messages.map(normalizeMessage), page: +page, has_more: messages.length === +limit })
     } catch (err) {
       const status = err.response?.status
-      const detail = err.response?.data?.detail ?? err.message
-      console.error(`[Messages GET] ${status}: ${detail}`)
-      // Si es 403/scope, devolver info útil en vez de error genérico
-      if (status === 403) return res.json({ messages: [], page: +page, has_more: false, _note: 'scope_required: External chat history' })
+      if (status === 403) {
+        // El scope "External chat history" no está disponible en este plan/integración.
+        // Fallback: obtener el último mensaje desde el talk.
+        try {
+          const { getTalks } = await import('./_kommo.js')
+          const talks = await getTalks({ 'filter[talk_id][]': chatId, limit: 1 })
+          const talk = talks?._embedded?.talks?.[0]
+          if (talk?.last_message) {
+            const lm = talk.last_message
+            return res.json({
+              messages: [{
+                id:         `last-${chatId}`,
+                chat_id:    String(chatId),
+                text:       lm.body?.text ?? lm.text ?? '',
+                type:       'text',
+                direction:  lm.author?.type === 'user' ? 'out' : 'in',
+                created_at: lm.created_at,
+              }],
+              page: 1,
+              has_more: false,
+              _scope_limited: true,
+            })
+          }
+        } catch {}
+        return res.json({ messages: [], page: +page, has_more: false, _scope_limited: true })
+      }
+      console.error(`[Messages GET] ${status}: ${err.message}`)
       return res.json({ messages: [], page: +page, has_more: false })
     }
   }
