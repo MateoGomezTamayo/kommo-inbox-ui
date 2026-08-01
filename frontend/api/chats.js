@@ -24,9 +24,8 @@ export default async function handler(req, res) {
 function normalizeTalk(talk) {
   const contact = talk._embedded?.contacts?.[0] ?? {}
   return {
-    id:              String(talk.entity_id),  // lead_id — usado para obtener notas/mensajes
-    talk_id:         talk.talk_id,
-    chat_id:         talk.chat_id,            // UUID — para enviar mensajes
+    id:              String(talk.talk_id),  // talk_id (integer) = ID para mensajes
+    chat_id:         talk.chat_id,           // UUID
     contact: {
       id:     contact.id,
       name:   contact.name || `Contacto ${contact.id ?? ''}`,

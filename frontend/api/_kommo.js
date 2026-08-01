@@ -23,8 +23,13 @@ export const getTalks = (p = {}) =>
 export const getLeadNotes = (leadId, p = {}) =>
   req('get', `/leads/${leadId}/notes`, { 'order[id]': 'asc', ...p })
 
-export const sendTalkMessage = (chatId, text) =>
-  req('post', `/chats/${chatId}/messages`, {}, { body: { type: 'text', text } })
+// Mensajes de una conversación — endpoint correcto según docs de Kommo
+// GET /api/v4/talks/{talk_id}/messages (requiere scope: External chat history)
+export const getTalkMessages = (talkId, p = {}) =>
+  req('get', `/talks/${talkId}/messages`, p)
+
+export const sendTalkMessage = (talkId, text) =>
+  req('post', `/talks/${talkId}/messages`, {}, { body: { type: 'text', text } })
 
 // Leads — fallback para data adicional
 export const getLeads        = (p = {}) => req('get', '/leads', p)
